@@ -216,7 +216,8 @@ func (s *RecommendationService) GetRecommendations(eventID uint) ([]models.TimeS
 
 		// Calculate the maximum start time within the slot
 		maxStartTime := slot.EndTime.Add(-time.Duration(durationMinutes) * time.Minute)
-
+		//startTimeUTC := startTime.In(time.UTC)
+        //endTimeUTC := endTime.In(time.UTC)
 		// Iterate through possible start times at 15-minute intervals
 		for startTime := slot.StartTime; !startTime.After(maxStartTime); startTime = startTime.Add(15 * time.Minute) {
 			endTime := startTime.Add(time.Duration(durationMinutes) * time.Minute)
