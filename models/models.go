@@ -19,7 +19,7 @@ type Event struct {
 // TimeSlot represents a potential time for an event
 type TimeSlot struct {
 	gorm.Model
-	EventID   uint      `json:"event_id" gorm:"index"`
+	EventID   uint      `json:"event_id" gorm:"index;constraint:OnDelete:CASCADE"`
 	StartTime time.Time `json:"start_time" binding:"required"`
 	EndTime   time.Time `json:"end_time" binding:"required"`
 }

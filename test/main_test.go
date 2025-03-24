@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -288,4 +289,80 @@ func TestAvailabilityEndpoints(t *testing.T) {
 	if resp.Code != http.StatusOK {
 		t.Errorf("Expected 200 on retrieving availability, got %d", resp.Code)
 	}
+}
+
+
+func TestRecommendationEndpoint(t *testing.T) {
+	router, _ := setupTestRouter()
+
+	// Create Event
+	eventPayload := map[string]interface{}{
+		"title":            "Recommendation Test Event",
+		"organizer_id":     1,
+		"duration_minutes": 60,
+	}
+	eventJSON, _ := json.Marshal(eventPayload)
+	req, _ := http.NewRequest("POST", "/api/v1/events", bytes.NewBuffer(eventJSON))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+	var event models.Event
+	json.Unmarshal(resp.Body.Bytes(), &event)
+
+	// Create Time Slot
+	start := time.Now().Add(24 * time.Hour)
+	end := start.Add(2 * time.Hour)
+	timeslotJSON, _ := json.Marshal(map[string]interface{}{
+		"start_time": start.Format(time.RFC3339),
+		"end_time":   end.Format(time.RFC3339),
+	})
+	req, _ = http.NewRequest("POST", "/api/v1/events/"+strconv.Itoa(int(event.ID))+"/timeslots", bytes.NewBuffer(timeslotJSON))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(httptest.NewRecorder(), req)
+
+	// Create Users and Availability
+	user1 := createTestUser(router, "user1@test.com")
+	user2 := createTestUser(router, "user2@test.com")
+	createAvailability(router, user1.ID, event.ID, start.Add(30*time.Minute), end.Add(-30*time.Minute))
+	createAvailability(router, user2.ID, event.ID, start, end)
+
+	// Get Recommendations
+	req, _ = http.NewRequest("GET", "/api/v1/events/"+strconv.Itoa(int(event.ID))+"/recommendations", nil)
+	resp = httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusOK {
+		t.Errorf("Expected 200 on recommendations, got %d", resp.Code)
+	}
+
+	var recommendations []models.TimeSlotRecommendation
+	json.Unmarshal(resp.Body.Bytes(), &recommendations)
+	if len(recommendations) == 0 {
+		t.Error("Expected at least one recommendation")
+	}
+}
+
+func createTestUser(router *gin.Engine, email string) models.User {
+	userJSON, _ := json.Marshal(map[string]interface{}{
+		"name":     "Test User",
+		"email":    email,
+		"timezone": "UTC",
+	})
+	req, _ := http.NewRequest("POST", "/api/v1/users", bytes.NewBuffer(userJSON))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+	var user models.User
+	json.Unmarshal(resp.Body.Bytes(), &user)
+	return user
+}
+
+func createAvailability(router *gin.Engine, userID, eventID uint, start, end time.Time) {
+	availJSON, _ := json.Marshal(map[string]interface{}{
+		"start_time": start.Format(time.RFC3339),
+		"end_time":   end.Format(time.RFC3339),
+	})
+	req, _ := http.NewRequest("POST", fmt.Sprintf("/api/v1/users/%d/events/%d/availability", userID, eventID), bytes.NewBuffer(availJSON))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(httptest.NewRecorder(), req)
 }
