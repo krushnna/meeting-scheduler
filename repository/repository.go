@@ -10,6 +10,7 @@ type EventRepository interface {
 	Create(event *models.Event) error
 	FindByID(id uint) (*models.Event, error)
 	FindAll() ([]models.Event, error)
+	FindAllWithPagination(limit, offset int) ([]models.Event, error)
 	Update(id uint, event *models.Event) error
 	Delete(id uint) error
 }
@@ -17,6 +18,15 @@ type EventRepository interface {
 // EventRepositoryImpl implements EventRepository
 type EventRepositoryImpl struct {
 	db *gorm.DB
+}
+
+func (r *EventRepositoryImpl) FindAllWithPagination(limit, offset int) ([]models.Event, error) {
+	var events []models.Event
+	result := r.db.Limit(limit).Offset(offset).Find(&events)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return events, nil
 }
 
 func NewEventRepository(db *gorm.DB) EventRepository {

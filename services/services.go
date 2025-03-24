@@ -31,6 +31,9 @@ func (s *EventService) CreateEvent(event *models.Event) error {
 func (s *EventService) GetEvent(id uint) (*models.Event, error) {
 	return s.repo.FindByID(id)
 }
+func (s *EventService) GetAllEventsWithPagination(limit, offset int) ([]models.Event, error) {
+	return s.repo.FindAllWithPagination(limit, offset)
+}
 
 func (s *EventService) GetAllEvents() ([]models.Event, error) {
 	return s.repo.FindAll()

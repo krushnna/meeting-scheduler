@@ -50,7 +50,6 @@ func (c *EventController) CreateEvent(ctx *gin.Context) {
 	}
 
 	c.logger.Info("Event created successfully", zap.Uint("event_id", event.ID))
-	// Return only non-null fields (ensure your model uses omitempty tags)
 	ctx.JSON(http.StatusCreated, event)
 }
 
@@ -74,18 +73,44 @@ func (c *EventController) GetEvent(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, event)
 }
 
-// GetAllEvents returns all events. Returns an empty array if none found.
+// GetAllEvents returns all events with pagination support.
+// Query parameters: limit (default 10) and offset (default 0)
 func (c *EventController) GetAllEvents(ctx *gin.Context) {
-	c.logger.Debug("Fetching all events")
-	events, err := c.service.GetAllEvents()
+	limitStr := ctx.Query("limit")
+	offsetStr := ctx.Query("offset")
+	var limit, offset int
+	var err error
+
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil || limit <= 0 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit value"})
+			return
+		}
+	} else {
+		limit = 10 // default limit
+	}
+
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil || offset < 0 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid offset value"})
+			return
+		}
+	} else {
+		offset = 0 // default offset
+	}
+
+	c.logger.Debug("Fetching events with pagination", zap.Int("limit", limit), zap.Int("offset", offset))
+	// Call a service method that supports pagination.
+	events, err := c.service.GetAllEventsWithPagination(limit, offset)
 	if err != nil {
 		c.logger.Error("Failed to fetch events", zap.Error(err))
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching events: " + err.Error()})
 		return
 	}
 
-	c.logger.Info("Retrieved all events", zap.Int("count", len(events)))
-	// Ensure the result contains no null values by relying on model struct tags (e.g., omitempty)
+	c.logger.Info("Retrieved events", zap.Int("count", len(events)))
 	ctx.JSON(http.StatusOK, events)
 }
 
@@ -146,7 +171,7 @@ func (c *EventController) DeleteEvent(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Event deleted successfully"})
 }
 
-// TimeSlotController handles HTTP requests for time slots
+// TimeSlotController handles HTTP requests for time slots.
 type TimeSlotController struct {
 	service *services.TimeSlotService
 	logger  *zap.Logger
@@ -255,7 +280,7 @@ func (c *TimeSlotController) DeleteTimeSlot(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Time slot deleted successfully"})
 }
 
-// UserController handles HTTP requests for users
+// UserController handles HTTP requests for usersa
 type UserController struct {
 	service *services.UserService
 	logger  *zap.Logger
@@ -508,7 +533,7 @@ func NewRecommendationController(service *services.RecommendationService, logger
 }
 
 // GetRecommendations generates and returns time slot recommendations.
-// It ensures that null values are omitted by relying on proper JSON struct tags in the models.
+// It relies on proper JSON struct tags (with omitempty) in the models to omit null values.
 func (c *RecommendationController) GetRecommendations(ctx *gin.Context) {
 	eventID, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
