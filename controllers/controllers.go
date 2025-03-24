@@ -42,7 +42,7 @@ func (c *EventController) CreateEvent(ctx *gin.Context) {
 		return
 	}
 
-	c.logger.Info("Creating new event", zap.String("title", event.Title))
+	c.logger.Info("Crreating new event", zap.String("title", event.Title))
 	if err := c.service.CreateEvent(&event); err != nil {
 		c.logger.Error("Failed to create event", zap.Error(err))
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating event: " + err.Error()})
