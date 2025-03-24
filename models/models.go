@@ -10,7 +10,7 @@ import (
 type Event struct {
 	gorm.Model
 	Title           string     `json:"title" binding:"required"`
-	Description     string     `json:"description"`
+	Description     string     `json:"description,omitempty"`
 	OrganizerId     uint       `json:"organizer_id" binding:"required"`
 	DurationMinutes int        `json:"duration_minutes" binding:"required,min=1"`
 	TimeSlots       []TimeSlot `json:"time_slots,omitempty" gorm:"foreignKey:EventID"`
@@ -44,8 +44,8 @@ type UserAvailability struct {
 // TimeSlotRecommendation represents a recommended time slot with participant info
 type TimeSlotRecommendation struct {
 	TimeSlot           TimeSlot    `json:"time_slot"`
-	MatchingUsers      []User      `json:"matching_users"`
-	NonMatchingUsers   []User      `json:"non_matching_users"`
+	MatchingUsers      []User      `json:"matching_users,omitempty"`
+	NonMatchingUsers   []User      `json:"non_matching_users,omitempty"`
 	MatchingPercentage float64     `json:"matching_percentage"`
 	EventDuration      int         `json:"event_duration"`
 	StartOptions       []time.Time `json:"start_options,omitempty"`
