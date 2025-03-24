@@ -60,7 +60,7 @@ Create a `.env` file at the root of your project with the following variables (a
 # Environment
 APP_ENV=development  # production/staging
 GIN_MODE=debug
-
+LOG_LEVEL=info
 # Server
 API_PORT=8080
 
