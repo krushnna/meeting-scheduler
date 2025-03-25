@@ -120,10 +120,6 @@ RUN go mod download
 # Copy the entire source code
 COPY . .
 
-# (Since you are manually maintaining openapi.yaml, we don't run swag init here)
-# RUN go install github.com/swaggo/swag/cmd/swag@latest
-# RUN swag init -g main.go -o docs
-
 # Build the application binary
 RUN CGO_ENABLED=0 GOOS=linux go build -o meeting-scheduler .
 
